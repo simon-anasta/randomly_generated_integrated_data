@@ -45,48 +45,175 @@ REFERENCE_FILE = "./Reference/residence.csv"
 GENERATED_FILE = "./Generated/[ir_clean]_[ird_ems].csv"
 
 # attributes
-MIN_YEAR = 1990
+MIN_YEAR = 2000
 MAX_YEAR = 2020
+START_EARNING_MIN_AGE = 15
+START_EARNING_MAX_AGE = 25
+PENSION_MIN_AGE = 65
+PENSION_MAX_AGE = 70
+MONTHS_STABLE_FOR = 4
+NON_RESIDENT_EARNING = 0.1
 
+TRANSITION_MATRIX = matrix(
+  c(
+    #NA, BEN, WAS_b, WAS_g, WHP
+    0.90, 0.03, 0.05, 0.01, 0.01, # NONE
+    0.05, 0.85, 0.07, 0.01, 0.02, # BEN
+    0.02, 0.05, 0.85, 0.06, 0.02, # WAS_b
+    0.01, 0.01, 0.01, 0.95, 0.02, # WAS_g
+    0.01, 0.01, 0.03, 0.10, 0.85  # WHP
+  ),
+  nrow = 5,
+  ncol = 5,
+  byrow = TRUE
+)
 
+INITIAL_NONE = 0.15
+INITIAL_BEN = 0.12
+INITIAL_WAS_b = 0.16
+INITIAL_WAS_g = 0.46
+INITIAL_WHP = 0.11
 
 ## setup ----------------------------------------------------------------------
 
 library(dplyr)
+library(lubridate)
 source("./Code main/support_functions.R")
 set.seed(seed = SEED)
 
 lookup = read.csv(LOOKUP_FILE, stringsAsFactors = FALSE) %>%
   filter(schema == "ir_clean", table == "ird_ems")
 
-base_population = read.csv(REFERENCE_FILE,
-                           stringsAsFactors = FALSE) %>%
-  select(snz_uid, snz_birth_year_nbr, snz_deceased_year_nbr)
+base_population = read.csv(REFERENCE_FILE, stringsAsFactors = FALSE)
 
-pop_size = nrow(base_population)
+## helper functions -----------------------------------------------------------
+
+index_to_char = function(index){
+  case_when(
+    index == 1 ~ "none",
+    index == 2 ~ "BEN",
+    index == 3 ~ "WAS_b",
+    index == 4 ~ "WAS_g",
+    index == 5 ~ "WHP"
+  )
+}
+
+char_to_index = function(char){
+  case_when(
+    char == "none" ~ 1,
+    char == "BEN" ~ 2,
+    char == "WAS_b" ~ 3,
+    char == "WAS_g" ~ 4,
+    char == "WHP" ~ 5
+  )
+}
+
+make_transition = function(char){
+  index = char_to_index(char)
+  row = TRANSITION_MATRIX[index,]
+  prob = runif(1)
+  smallers = sum(prob < cumsum(row))
+  index = length(row) - smallers + 1
+  index_to_char(index)
+}
 
 ## generate -------------------------------------------------------------------
 
+pop_size = nrow(base_population)
+
+#### prep ----
+earning_by_year = base_population %>%
+  # filter to ever earns in NZ
+  mutate(
+    r1 = runif(pop_size),
+    is_earning = ifelse(r1 < NON_RESIDENT_EARNING, 1, is_resident)
+  ) %>%
+  filter(is_earning == 1)
+
+
+employ_pop = earning_by_year %>%
+  select(-the_year, -is_resident, -r1, -is_earning) %>%
+  distinct()
+
+pop_size = nrow(employ_pop)
+
+employ_pop = employ_pop %>%
+  mutate(
+    start_earn = randbetween(START_EARNING_MIN_AGE, START_EARNING_MAX_AGE, pop_size),
+    swap_pension = randbetween(PENSION_MIN_AGE, PENSION_MAX_AGE, pop_size),
+    stable_remaining = randbetween(1, MONTHS_STABLE_FOR, pop_size)
+  ) %>%
+  mutate(
+    year_start = snz_birth_year_nbr + start_earn,
+    year_swap = snz_birth_year_nbr + swap_pension
+  ) %>%
+  mutate(
+    r2 = runif(pop_size),
+    open_job = case_when(
+      r2 < INITIAL_NONE ~ 'none',
+      r2 < INITIAL_NONE + INITIAL_BEN ~ 'BEN',
+      r2 < INITIAL_NONE + INITIAL_BEN + INITIAL_WAS_b ~ 'WAS_b',
+      r2 < INITIAL_NONE + INITIAL_BEN + INITIAL_WAS_b + INITIAL_WAS_g ~ 'WAS_g',
+      r2 <= 1 ~ 'WHP'
+    )
+  ) %>%
+  select(-start_earn, -swap_pension, -r2, -snz_birth_year_nbr)
+
 #### base year ----
-generated_table = base_population %>%
-  mutate(the_year = RES_MIN_YEAR,
-         pp = runif(pop_size)) %>%
-  mutate(is_resident = ifelse(pp <= INITIAL_PROPORTION_RESIDENT, 1, 0)) %>%
-  select(snz_uid, snz_birth_year_nbr, snz_deceased_year_nbr, the_year, is_resident)
+
+current_year = MIN_YEAR
+current_month = 1
+
+current_year_data = employ_pop %>%
+  mutate(year = current_year, month = current_month)
 
 #### increment years ----
-current_year = generated_table
+generated_table = current_year_data
 
-for(each_year in (RES_MIN_YEAR+1):RES_MAX_YEAR){
-  new_year = current_year %>%
-    mutate(the_year = each_year,
-           pp = runif(pop_size)) %>%
-    mutate(is_resident = ifelse(pp < TRANSITION_PROB, 1 - is_resident, is_resident)) %>%
-    select(snz_uid, snz_birth_year_nbr, snz_deceased_year_nbr, the_year, is_resident)
+while(TRUE){
+  # increment calendar
+  current_month = current_month + 1
+  if(current_month >= 13){
+    current_year = current_year + 1
+    current_month = 1
+  }
+  if(current_year >= MAX_YEAR + 1){
+    break
+  }
   
-  generated_table = bind_rows(generated_table, new_year)
-  current_year = new_year
+  # increment time in data
+  new_year_data = current_year_data %>%
+    mutate(
+      year = current_year,
+      month = current_month,
+      stable_remaining = stable_remaining - 1
+    )
+  
+  # split
+  no_change = new_year_data %>%
+    filter(stable_remaining > 0)
+  
+  yes_change = new_year_data %>%
+    filter(stable_remaining <= 0)
+  
+  # simulate for change
+  pop_size = nrow(yes_change)
+  yes_change = yes_change %>%
+    mutate(
+      stable_remaining = randbetween(1, MONTHS_STABLE_FOR, pop_size),
+      r2 = runif(pop_size)
+    )
+  yes_change$new_job = sapply(yes_change$open_job, make_transition)
+  
+  yes_change = yes_change %>%
+    mutate(open_job = new_job) %>%
+    select(-r2, -new_job)
+  
+  new_year_data = bind_rows(no_change, yes_change)
+  generated_table = bind_rows(generated_table, new_year_data)
+  current_year_data = new_year_data
 }
+
 
 ## simulate income type -------------------------------------------------------
 
