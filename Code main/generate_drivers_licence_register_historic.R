@@ -101,7 +101,7 @@ C2_MAX_GAP = 365 * 5
 C345_MIN_GAP = 15
 C345_MAX_GAP = 365 * 8
 
-DLR_DATE = as.Date("2021-01-12")
+DLR_DATE = as.Date("2020-12-31")
 NULL_DATE = as.Date("9000-01-01")
 ORIGIN_DATE = as.Date("1000-01-01")
 
@@ -721,6 +721,15 @@ gg = gg %>%
 
 ## tidy up / enforce consistency ----------------------------------------------
 
+gg = gg %>%
+  filter(nzta_dlr_licence_stage_text != "none") %>%
+  mutate(
+    nzta_dlr_class_status_text = if_else(nzta_dlr_lic_class_grant_date != NULL_DATE, nzta_dlr_class_status_text, NA_character_),
+    nzta_dlr_licence_stage_text = if_else(nzta_dlr_lic_class_grant_date != NULL_DATE, nzta_dlr_licence_stage_text, NA_character_),
+    nzta_dlr_class_from_date = if_else(nzta_dlr_lic_class_grant_date != NULL_DATE, nzta_dlr_class_from_date, NA_Date_),
+    years_latest_class_issue = if_else(nzta_dlr_lic_class_grant_date != NULL_DATE, years_latest_class_issue, NA_real_),
+    nzta_dlr_lic_class_grant_date = if_else(nzta_dlr_lic_class_grant_date != NULL_DATE, nzta_dlr_lic_class_grant_date, NA_Date_)
+  )
 
 ## output dlr -----------------------------------------------------------------
 
