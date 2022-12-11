@@ -23,7 +23,7 @@ REFERENCE_FILE = "./Reference/residence.csv"
 GENERATED_FILE = "./Generated/[data]_[person_overseas_spell].csv"
 
 # attributes
-RES_PROB_OVERSEAS = 0.003
+RES_PROB_OVERSEAS = 0.01
 RES_MIN_OVERSEAS = 3
 RES_MAX_OVERSEAS = 23
 VIS_PROB_NZ = 0.05
@@ -73,7 +73,67 @@ res_overseas = res_overseas %>%
     pos_ceased_date = pos_applied_date + pos_day_span_nbr
   ) %>%
   select(snz_uid, pos_applied_date, pos_ceased_date, pos_day_span_nbr)
-  
+
+#### non-res becoming res ----
+
+nonres_to_res = base_population %>%
+  filter(is_resident == 1) %>%
+  group_by(snz_uid) %>%
+  summarise(earliest_res = min(the_year))
+
+table_size = nrow(nonres_to_res)
+
+nonres_to_res = nonres_to_res %>%
+  mutate(
+    pp = runif(table_size),
+    rand_year = randbetween(IMMIGRATE_MIN_YEAR, 
+                            IMMIGRATE_MAX_YEAR, 
+                            table_size)
+  ) %>%
+  filter(
+    earliest_res > IMMIGRATE_MAX_YEAR
+    | pp < IMMIGRATE_PRE_PROB
+  ) %>%
+  mutate(
+    immigrate_year = ifelse(
+      earliest_res >= IMMIGRATE_MAX_YEAR, earliest_res, rand_year
+    )
+  )
+
+table_size = nrow(nonres_to_res)
+
+nonres_to_res = nonres_to_res %>%
+  mutate(
+    month = randbetween(1,12,table_size),
+    day = randbetween(1,28,table_size),
+    date_str = paste0(immigrate_year,"-",month,"-",day),
+    pos_applied_date = lubridate::ymd("1900-01-01"),
+    pos_ceased_date = lubridate::ymd(date_str) - 190,
+    pos_day_span_nbr = as.numeric(pos_ceased_date - pos_applied_date)
+  ) %>%
+  select(snz_uid, pos_applied_date, pos_ceased_date, pos_day_span_nbr)
+
+#### res becoming non-res ----
+
+res_to_nonres = base_population %>%
+  filter(is_resident == 1) %>%
+  group_by(snz_uid) %>%
+  summarise(migrate_year = max(the_year)) %>%
+  filter(migrate_year != 2020)
+
+table_size = nrow(res_to_nonres)
+
+res_to_nonres = res_to_nonres %>%
+  mutate(
+    month = randbetween(1,12,table_size),
+    day = randbetween(1,28,table_size),
+    date_str = paste0(migrate_year,"-",month,"-",day),
+    pos_applied_date = lubridate::ymd(date_str) + 190,
+    pos_ceased_date = lubridate::ymd("9999-12-31"),
+    pos_day_span_nbr = as.numeric(pos_ceased_date - pos_applied_date)
+  ) %>%
+  select(snz_uid, pos_applied_date, pos_ceased_date, pos_day_span_nbr)
+
 #### non-residents visiting ----
 
 nonres_visit = base_population %>%
@@ -106,7 +166,9 @@ prep_nonres_overseas = nonres_visit %>%
   group_by(snz_uid) %>%
   arrange(visit_start) %>%
   mutate(prev_end = lag(visit_end),
-         next_start = lead(visit_start))
+         next_start = lead(visit_start)) %>%
+  anti_join(nonres_to_res, by = "snz_uid") %>%
+  anti_join(res_to_nonres, by = "snz_uid")
 
 nonres_overseas_1 = prep_nonres_overseas %>%
   select(
@@ -114,8 +176,28 @@ nonres_overseas_1 = prep_nonres_overseas %>%
     pos_applied_date = prev_end,
     pos_ceased_date = visit_start
   ) %>%
-  mutate(pos_applied_date = coalesce(pos_applied_date, as.Date("1900-01-01")))
-    
+  mutate(pos_applied_date = coalesce(pos_applied_date, as.Date("1900-01-01"))) %>%
+  left_join(base_population, by = "snz_uid", suffix = c("","_x")) %>%
+  mutate(possible_year = ifelse(is_resident == 1 &
+                                  the_year < lubridate::year(pos_ceased_date), the_year, NA)) %>%
+  group_by(snz_uid, pos_applied_date, pos_ceased_date) %>%
+  summarise(possible_year = max(possible_year, na.rm = TRUE)) %>%
+  ungroup()
+
+table_size = nrow(nonres_overseas_1)
+
+nonres_overseas_1 = nonres_overseas_1 %>%
+  mutate(
+    swap_out = !is.na(possible_year) & !is.infinite(possible_year),
+    possible_year = ifelse(swap_out,possible_year, 1900),
+    month = randbetween(1,12, table_size),
+    day = randbetween(1,28, table_size),
+    alt_date_str = paste0(possible_year,"-",month,"-",day),
+    alt_date = lubridate::ymd(alt_date_str) + 190
+  ) %>%
+  mutate(pos_applied_date = if_else(swap_out,alt_date, pos_applied_date)) %>%
+  select(snz_uid, pos_applied_date, pos_ceased_date)
+
 nonres_overseas_2 = prep_nonres_overseas %>%
   filter(is.na(next_start)) %>%
   mutate(next_start = as.Date('9999-12-31')) %>%
@@ -123,7 +205,28 @@ nonres_overseas_2 = prep_nonres_overseas %>%
     snz_uid,
     pos_applied_date = visit_end,
     pos_ceased_date = next_start
-  )
+  )  %>%
+  left_join(base_population, by = "snz_uid", suffix = c("","_x")) %>%
+  mutate(possible_year = ifelse(is_resident == 1 &
+                                  the_year > lubridate::year(pos_applied_date), the_year, NA)) %>%
+  group_by(snz_uid, pos_applied_date, pos_ceased_date) %>%
+  summarise(possible_year = min(possible_year, na.rm = TRUE)) %>%
+  ungroup()
+
+table_size = nrow(nonres_overseas_2)
+
+nonres_overseas_2 = nonres_overseas_2 %>%
+  mutate(
+    swap_out = !is.na(possible_year) & !is.infinite(possible_year),
+    possible_year = ifelse(swap_out,possible_year, 9000),
+    month = randbetween(1,12, table_size),
+    day = randbetween(1,28, table_size),
+    alt_date_str = paste0(possible_year,"-",month,"-",day),
+    alt_date = lubridate::ymd(alt_date_str) - 190
+  ) %>%
+  mutate(pos_ceased_date = if_else(swap_out,alt_date, pos_ceased_date)) %>%
+  select(snz_uid, pos_applied_date, pos_ceased_date)
+
 
 nonres_overseas = bind_rows(
   nonres_overseas_1,
@@ -132,65 +235,6 @@ nonres_overseas = bind_rows(
   mutate(
     pos_day_span_nbr = as.numeric(pos_ceased_date - pos_applied_date)
   )
-
-#### non-res becoming res ----
-
-nonres_to_res = base_population %>%
-  filter(is_resident == 1) %>%
-  group_by(snz_uid) %>%
-  summarise(earliest_res = min(the_year))
-
-table_size = nrow(nonres_to_res)
-
-nonres_to_res = nonres_to_res %>%
-  mutate(
-    pp = runif(table_size),
-    rand_year = randbetween(IMMIGRATE_MIN_YEAR, 
-                            IMMIGRATE_MAX_YEAR, 
-                            table_size)
-  ) %>%
-  filter(
-    earliest_res > IMMIGRATE_MAX_YEAR
-    | pp < IMMIGRATE_PRE_PROB
-  ) %>%
-  mutate(
-    immigrate_year = ifelse(
-      earliest_res > IMMIGRATE_MAX_YEAR, earliest_res, rand_year
-    )
-  )
-
-table_size = nrow(nonres_to_res)
-
-nonres_to_res = nonres_to_res %>%
-  mutate(
-    month = randbetween(1,12,table_size),
-    day = randbetween(1,28,table_size),
-    date_str = paste0(immigrate_year,"-",month,"-",day),
-    pos_applied_date = lubridate::ymd("1900-01-01"),
-    pos_ceased_date = lubridate::ymd(date_str),
-    pos_day_span_nbr = as.numeric(pos_ceased_date - pos_applied_date)
-  ) %>%
-  select(snz_uid, pos_applied_date, pos_ceased_date, pos_day_span_nbr)
-
-#### res becoming non-res ----
-
-res_to_nonres = base_population %>%
-  filter(is_resident == 1) %>%
-  group_by(snz_uid) %>%
-  summarise(migrate_year = max(the_year))
-
-table_size = nrow(res_to_nonres)
-
-res_to_nonres = res_to_nonres %>%
-  mutate(
-    month = randbetween(1,12,table_size),
-    day = randbetween(1,28,table_size),
-    date_str = paste0(migrate_year,"-",month,"-",day),
-    pos_applied_date = lubridate::ymd(date_str),
-    pos_ceased_date = lubridate::ymd("9999-12-31"),
-    pos_day_span_nbr = as.numeric(pos_ceased_date - pos_applied_date)
-  ) %>%
-  select(snz_uid, pos_applied_date, pos_ceased_date, pos_day_span_nbr)
 
 ## combine to single table ----------------------------------------------------
 
@@ -202,7 +246,8 @@ generated_table = bind_rows(
 ) %>%
   mutate(
     pos_first_arrival_ind = ifelse(lubridate::year(pos_applied_date) <= 1900, 'y', 'n'),
-    pos_last_departure_ind = ifelse(lubridate::year(pos_ceased_date) >= 9000, 'y', 'n')
+    pos_last_departure_ind = ifelse(lubridate::year(pos_ceased_date) >= 9000, 'y', 'n'),
+    pos_day_span_nbr = as.numeric(pos_ceased_date - pos_applied_date)
   )
 
 #### pos_source_code ----
