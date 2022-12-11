@@ -73,6 +73,7 @@ INITIAL_BEN = 0.12
 INITIAL_WAS_b = 0.16
 INITIAL_WAS_g = 0.46
 INITIAL_WHP = 0.11
+PROPORTION_SECOND_JOB = 0.05
 
 ## setup ----------------------------------------------------------------------
 
@@ -159,6 +160,19 @@ employ_pop = employ_pop %>%
   ) %>%
   select(-start_earn, -swap_pension, -r2, -snz_birth_year_nbr)
 
+#### create multiple jobs for some people ----
+# by duplicating these people and simulating a duplicate stream
+
+num_second_job = round(PROPORTION_SECOND_JOB * nrow(employ_pop))
+index_second_job = sample(1:nrow(employ_pop), num_second_job)
+
+additional_pop = employ_pop[index_second_job,] %>%
+  mutate(tax_code = "S")
+
+employ_pop = employ_pop %>% mutate(tax_code = "M")
+
+employ_pop = bind_rows(employ_pop, additional_pop)
+
 #### base year ----
 
 current_year = MIN_YEAR
@@ -214,15 +228,37 @@ while(TRUE){
   current_year_data = new_year_data
 }
 
+#### tidy up ----
+
+g2 = generated_table %>%
+  # pension if past swap date
+  mutate(open_job = ifelse(year > year_swap, "PEN", open_job)) %>%
+  # no income before start
+  filter(year_start <= year) %>%
+  # no income after death
+  filter(year <= snz_deceased_year_nbr) %>%
+  # exclude no income
+  filter(open_job != "none") %>%
+  # where tax code = "S" discard non-job
+  filter(tax_code != "S" | substr(open_job, 1, 1) == "W") %>%
+  # must meet resident or non-resident-earning
+  semi_join(earning_by_year, by = c("snz_uid" = "snz_uid", "year" = "the_year")) %>%
+  # dates
+  mutate(
+    return_date = ymd(paste0(year,"-",month,"-01")),
+    return_date = rollforward(return_date)
+  )
+
+
 
 ## simulate income type -------------------------------------------------------
 
-snz_uid
-ir_ems_return_period_date
+# snz_uid
+# ir_ems_return_period_date
 snz_employer_ird_uid
 ir_ems_gross_earnings_amt
-ir_ems_income_source_code
-ir_ems_tax_code
+# ir_ems_income_source_code
+# ir_ems_tax_code
 
 
 ## simulate income details ----------------------------------------------------
