@@ -16,10 +16,10 @@
 
 # controls
 SEED = 123
-POP_SIZE = 1000
 
 # input/output
 LOOKUP_FILE = "./Lookups/[data]_[snz_res_pop].csv"
+REFERENCE_FILE = "./Reference/residence.csv"
 GENERATED_FILE = "./Generated/[data]_[snz_res_pop].csv"
 
 # attributes
@@ -123,6 +123,10 @@ generated_table = generated_table %>%
 ## write out table ------------------------------------------------------------
 
 generated_table %>%
+  select(snz_uid, snz_birth_year_nbr, snz_deceased_year_nbr, the_year, is_resident) %>%
+  write.csv(REFERENCE_FILE, row.names = FALSE)
+
+generated_table %>%
   mutate(
     start_year = pmax(snz_birth_year_nbr, RES_MIN_YEAR),
     end_year = pmin(snz_deceased_year_nbr, RES_MAX_YEAR)
@@ -140,3 +144,5 @@ generated_table %>%
     srp_flag_under5_ind
   ) %>%
   write.csv(GENERATED_FILE, row.names = FALSE)
+
+
