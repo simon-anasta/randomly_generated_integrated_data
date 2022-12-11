@@ -11,9 +11,9 @@ data,person_overseas_spell,done
 data,personal_detail,done
 data,snz_res_pop,done
 dia_clean,births,planned
-dia_clean,civil_unions,planned
+dia_clean,civil_unions,next
 dia_clean,deaths,planned
-dia_clean,marriages,planned
+dia_clean,marriages,next
 gss_clean,gss_household,
 gss_clean,gss_identity,
 gss_clean,gss_person,
@@ -49,7 +49,7 @@ moe_clean,tec_it_learner,
 moh_clean,lab_claims,
 moh_clean,nnpac,planned
 moh_clean,pharmaceutical,
-moh_clean,pub_fund_hosp_discharges_diag,underway
+moh_clean,pub_fund_hosp_discharges_diag,done
 moh_clean,pub_fund_hosp_discharges_event,done
 moj_clean,charges,planned
 msd_clean,msd_child,
@@ -71,7 +71,7 @@ msd_clean,msd_spell,
 msd_clean,msd_swn,
 msd_clean,msd_third_tier_expenditure,
 msd_clean,ref_msd_district_concordance,
-nzta_clean,drivers_licence_register,planned
+nzta_clean,drivers_licence_register,underway
 nzta_clean,motor_vehicle_register,planned
 pol_clean,pre_count_offenders,planned
 pol_clean,pre_count_victimisations,planned

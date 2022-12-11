@@ -1,0 +1,25 @@
+schema,table,column,value,weight,notes,,,,,,,,
+nzta_clean,dlr_historic,nzta_hist_licence_type_text,PERMANENT,90,,,,planned?,,,,,values
+nzta_clean,dlr_historic,nzta_hist_licence_type_text,TEMPORARY,4,,,,y,drivers_licence_register,snz_uid,1,int,
+nzta_clean,dlr_historic,nzta_hist_licence_type_text,DIPLOMATIC,1,for non-residents only,,,y,drivers_licence_register,snz_nzta_uid,2,int,
+nzta_clean,drivers_licence_register,nzta_dlr_organ_donor_ind,Y,56,,,,y,drivers_licence_register,nzta_snz_sex_code,3,varchar,
+nzta_clean,drivers_licence_register,nzta_dlr_organ_donor_ind,N,33,,,,y,drivers_licence_register,nzta_dlr_birth_month_nbr,4,tinyint,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,1,164,Northland,,,y,drivers_licence_register,nzta_dlr_birth_year_nbr,5,smallint,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,2,1493,Auckland,,,,drivers_licence_register,nzta_dlr_licence_issue_date,7,date,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,3,424,Waikato,,,y,drivers_licence_register,nzta_dlr_organ_donor_ind,8,bit,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,4,279,Bay of Plenty,,,y,drivers_licence_register,nzta_dlr_licence_type_text,9,varchar,"PERMANENT, TEMPORARY, DIPLOMATIC"
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,5,47,Gisborne,,,,drivers_licence_register,nzta_dlr_licence_status_text,10,varchar,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,6,158,Hawke’s Bay,,,,drivers_licence_register,nzta_dlr_lic_class_grant_date,11,date,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,7,113,Taranaki,,,,drivers_licence_register,nzta_dlr_lic_class_start_date,12,date,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,8,231,Manawat?-Whanganui,,,,drivers_licence_register,nzta_dlr_licence_from_date,13,date,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,9,486,Wellington,,,,drivers_licence_register,nzta_dlr_class_status_text,14,varchar,"active, suspended"
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,17,48,Tasman,,,y,drivers_licence_register,nzta_dlr_licence_class_text,15,varchar,123456
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,18,48,Nelson,,,,drivers_licence_register,nzta_dlr_licence_stage_text,16,varchar,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,12,44,Marlborough,,,,drivers_licence_register,nzta_dlr_class_from_date,17,date,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,13,33,West Coast,,,,drivers_licence_register,nzta_dlr_endorsement_type_text,18,varchar,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,14,562,Canterbury,,,,drivers_licence_register,nzta_dlr_endorsement_start_date,19,date,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,15,208,Otago,,,,drivers_licence_register,nzta_dlr_endorsement_expiry_date,20,date,
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,16,96,Southland,,,,drivers_licence_register,nzta_dlr_endorsement_status_text,21,varchar,
+,,,,,,,,,drivers_licence_register,nzta_dlr_card_required_ind,22,bit,
+,,,,,,,,,drivers_licence_register,nzta_dlr_endorsement_from_date,23,date,
+,,,,,,,,y,drivers_licence_register,nzta_dlr_region_code,25,char,
