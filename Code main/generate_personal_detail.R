@@ -151,41 +151,74 @@ generated_table = generated_table %>%
 #### snz_parent ----
 # snz_parent1_uid
 # snz_parent2_uid
-generated_table = generated_table %>%
+
+# child
+possible_child_table = generated_table %>%
+  mutate(ones = 1) %>%
+  select(snz_uid, snz_birth_year_nbr, ones)
+
+# first parent
+possible_parent1_table = generated_table %>%
+  filter(snz_sex_gender_code != 1) %>%
   mutate(
-    snz_parent1_uid = NA,
-    snz_parent2_uid = NA
+    min_birth_year = snz_birth_year_nbr + FERTILE_MIN_AGE,
+    max_birth_year = snz_birth_year_nbr + FERTILE_MAX_AGE,
+    ones = 1
+  ) %>%
+  select(snz_uid, min_birth_year, max_birth_year, snz_deceased_year_nbr, ones)
+
+possible_child_parent1 = possible_child_table %>%
+  left_join(possible_parent1_table, by = "ones", suffix = c("_c","_p1")) %>%
+  filter(
+    !is.na(snz_uid_p1),
+    min_birth_year <= snz_birth_year_nbr,
+    snz_birth_year_nbr <= max_birth_year,
+    snz_birth_year_nbr < snz_deceased_year_nbr
   )
 
-for(ii in 1:nrow(generated_table)){
-  my_birth_year = generated_table$snz_birth_year_nbr[ii]
-  
-  LB_parent = my_birth_year - FERTILE_MAX_AGE
-  UB_parent = my_birth_year - FERTILE_MIN_AGE
-  
-  possible_parents = generated_table %>%
-    filter(snz_birth_year_nbr >= LB_parent,
-           snz_birth_year_nbr <= UB_parent)
-  
-  possible_p1 = possible_parents %>%
-    filter(snz_sex_gender_code != 1) %>%
-    select(snz_uid) %>%
-    unlist() %>%
-    append(NA)
-  
-  possible_p2 = possible_parents %>%
-    filter(snz_sex_gender_code != 2) %>%
-    select(snz_uid) %>%
-    unlist() %>%
-    append(NA)
-  
-  generated_table$snz_parent1_uid[ii] = sample(possible_p1)
-  generated_table$snz_parent2_uid[ii] = sample(possible_p2)
-}
+chosen_parent1 = possible_child_parent1 %>%
+  mutate(
+    rand = runif(nrow(possible_child_parent1))
+    ) %>%
+  group_by(snz_uid_c) %>%
+  mutate(min_rand = min(rand)) %>%
+  filter(rand == min_rand) %>%
+  select(snz_uid = snz_uid_c, snz_parent1_uid = snz_uid_p1)
+           
+# second parent
+possible_parent2_table = generated_table %>%
+  filter(snz_sex_gender_code != 2) %>%
+  mutate(
+    min_birth_year = snz_birth_year_nbr + FERTILE_MIN_AGE,
+    max_birth_year = snz_birth_year_nbr + FERTILE_MAX_AGE,
+    ones = 1
+  ) %>%
+  select(snz_uid, min_birth_year, max_birth_year, snz_deceased_year_nbr, ones)
+
+possible_child_parent2 = possible_child_table %>%
+  left_join(possible_parent2_table, by = "ones", suffix = c("_c","_p2")) %>%
+  filter(
+    !is.na(snz_uid_p2),
+    min_birth_year <= snz_birth_year_nbr,
+    snz_birth_year_nbr <= max_birth_year,
+    snz_birth_year_nbr < snz_deceased_year_nbr
+  )
+
+chosen_parent2 = possible_child_parent2 %>%
+  mutate(
+    rand = runif(nrow(possible_child_parent2))
+  ) %>%
+  group_by(snz_uid_c) %>%
+  mutate(min_rand = min(rand)) %>%
+  filter(rand == min_rand) %>%
+  select(snz_uid = snz_uid_c, snz_parent2_uid = snz_uid_p2)
+
+# add to generated data
+generated_table = generated_table %>%
+  left_join(chosen_parent1, by = "snz_uid") %>%
+  left_join(chosen_parent2, by = "snz_uid")
 
 
-FERTILE_MIN_AGE = 18
-FERTILE_MAX_AGE = 37
 
 ## write out table ------------------------------------------------------------
 
