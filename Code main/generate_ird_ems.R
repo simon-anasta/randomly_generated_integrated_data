@@ -113,7 +113,6 @@ lookup = read.csv(LOOKUP_FILE, stringsAsFactors = FALSE) %>%
 base_population = read.csv(REFERENCE_FILE, stringsAsFactors = FALSE)
 
 businesses = read.csv(BUSINESS_FILE, stringsAsFactors = FALSE)
-busines_lookup = 
 
 
 ## helper functions -----------------------------------------------------------
