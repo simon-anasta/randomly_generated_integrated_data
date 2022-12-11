@@ -34,7 +34,7 @@
 # ir_ems_ent_anzsic06_code
 #
 
-# WARNING - SLOW - RUNTIME > 2 min
+# WARNING - SLOW - RUNTIME
 
 ## parameters -----------------------------------------------------------------
 
@@ -80,7 +80,7 @@ INITIAL_WHP = 0.11
 PROPORTION_SECOND_JOB = 0.05
 
 MU_WAS_g = 6.5
-MU_WAS_b = 6
+MU_WAS_b = 6.2
 MU_WHP = 6.65
 MU_BEN = 5.9
 MU_PEN = 6.1
@@ -515,6 +515,7 @@ g2 = g2 %>%
 ## write out table ------------------------------------------------------------
 
 g2 %>%
+  filter(open_job != 'none') %>%
   select(
     snz_uid,
     snz_ird_uid,
