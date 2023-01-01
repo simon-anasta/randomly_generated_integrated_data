@@ -152,23 +152,26 @@ generated_table = generated_table %>%
 # snz_parent1_uid
 # snz_parent2_uid
 
+link_bins = round(POP_SIZE / 1000)
+
+generated_table = generated_table %>%
+  mutate(linker = randbetween(1, link_bins, POP_SIZE))
+
 # child
 possible_child_table = generated_table %>%
-  mutate(ones = 1) %>%
-  select(snz_uid, snz_birth_year_nbr, ones)
+  select(snz_uid, snz_birth_year_nbr, linker)
 
 # first parent
 possible_parent1_table = generated_table %>%
   filter(snz_sex_gender_code != 1) %>%
   mutate(
     min_birth_year = snz_birth_year_nbr + FERTILE_MIN_AGE,
-    max_birth_year = snz_birth_year_nbr + FERTILE_MAX_AGE,
-    ones = 1
+    max_birth_year = snz_birth_year_nbr + FERTILE_MAX_AGE
   ) %>%
-  select(snz_uid, min_birth_year, max_birth_year, snz_deceased_year_nbr, ones)
+  select(snz_uid, min_birth_year, max_birth_year, snz_deceased_year_nbr, linker)
 
 possible_child_parent1 = possible_child_table %>%
-  left_join(possible_parent1_table, by = "ones", suffix = c("_c","_p1")) %>%
+  left_join(possible_parent1_table, by = "linker", suffix = c("_c","_p1")) %>%
   filter(
     !is.na(snz_uid_p1),
     min_birth_year <= snz_birth_year_nbr,
@@ -190,13 +193,12 @@ possible_parent2_table = generated_table %>%
   filter(snz_sex_gender_code != 2) %>%
   mutate(
     min_birth_year = snz_birth_year_nbr + FERTILE_MIN_AGE,
-    max_birth_year = snz_birth_year_nbr + FERTILE_MAX_AGE,
-    ones = 1
+    max_birth_year = snz_birth_year_nbr + FERTILE_MAX_AGE
   ) %>%
-  select(snz_uid, min_birth_year, max_birth_year, snz_deceased_year_nbr, ones)
+  select(snz_uid, min_birth_year, max_birth_year, snz_deceased_year_nbr, linker)
 
 possible_child_parent2 = possible_child_table %>%
-  left_join(possible_parent2_table, by = "ones", suffix = c("_c","_p2")) %>%
+  left_join(possible_parent2_table, by = "linker", suffix = c("_c","_p2")) %>%
   filter(
     !is.na(snz_uid_p2),
     min_birth_year <= snz_birth_year_nbr,
@@ -216,9 +218,18 @@ chosen_parent2 = possible_child_parent2 %>%
 # add to generated data
 generated_table = generated_table %>%
   left_join(chosen_parent1, by = "snz_uid") %>%
-  left_join(chosen_parent2, by = "snz_uid")
+  left_join(chosen_parent2, by = "snz_uid") %>%
+  select(-linker)
 
-
+rm(
+  "possible_child_parent1",
+  "possible_child_parent2",
+  "possible_child_table",
+  "possible_parent1_table",
+  "possible_parent2_table",
+  "chosen_parent1",
+  "chosen_parent2"
+)
 
 ## write out table ------------------------------------------------------------
 
