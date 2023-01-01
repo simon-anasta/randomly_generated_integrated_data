@@ -34,7 +34,7 @@
 # ir_ems_ent_anzsic06_code
 #
 
-# WARNING - SLOW - RUNTIME
+# WARNING - SLOW - RUNTIME (3hrs + for 100k people)
 
 ## parameters -----------------------------------------------------------------
 

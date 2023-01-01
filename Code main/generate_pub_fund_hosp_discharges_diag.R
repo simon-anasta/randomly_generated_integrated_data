@@ -195,7 +195,7 @@ gen_O = gen_O %>%
   inner_join(lookup, by = c("moh_dia_clinical_code" = "from_code",
                             "moh_dia_diagnosis_type_code" = "type"))
 
-# operation ate
+# operation date
 gen_O = gen_O %>%
   mutate(
     days = sample(OPERATION_RANGE, table_size, replace = TRUE),
