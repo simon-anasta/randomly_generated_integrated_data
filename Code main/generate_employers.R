@@ -20,7 +20,7 @@ SEED = 123
 
 # we recommend num businesses to be 1/20th - 1/50th of num people
 NUM_BUSINESS = 50
-# NUM_BUSINESS = 2500
+# NUM_BUSINESS = 250
 
 # input/output
 LOOKUP_FILE = "./Lookups/employer.csv"
