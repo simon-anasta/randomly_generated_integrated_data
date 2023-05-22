@@ -2,14 +2,14 @@ schema,table,column,value,weight,notes
 nzta_clean,dlr_historic,nzta_hist_licence_type_text,PERMANENT,90,reused for dlr
 nzta_clean,dlr_historic,nzta_hist_licence_type_text,TEMPORARY,4,reused for dlr
 nzta_clean,dlr_historic,nzta_hist_licence_type_text,DIPLOMATIC,1,for non-residents only
-nzta_clean,drivers_licence_register,nzta_dlr_organ_donor_ind,Y,56,
-nzta_clean,drivers_licence_register,nzta_dlr_organ_donor_ind,N,33,
+nzta_clean,drivers_licence_register,nzta_dlr_organ_donor_ind,1,56,
+nzta_clean,drivers_licence_register,nzta_dlr_organ_donor_ind,0,33,
 nzta_clean,drivers_licence_register,nzta_dlr_region_code,1,164,Northland
 nzta_clean,drivers_licence_register,nzta_dlr_region_code,2,1493,Auckland
 nzta_clean,drivers_licence_register,nzta_dlr_region_code,3,424,Waikato
 nzta_clean,drivers_licence_register,nzta_dlr_region_code,4,279,Bay of Plenty
 nzta_clean,drivers_licence_register,nzta_dlr_region_code,5,47,Gisborne
-nzta_clean,drivers_licence_register,nzta_dlr_region_code,6,158,Hawke’s Bay
+nzta_clean,drivers_licence_register,nzta_dlr_region_code,6,158,Hawkeï¿½s Bay
 nzta_clean,drivers_licence_register,nzta_dlr_region_code,7,113,Taranaki
 nzta_clean,drivers_licence_register,nzta_dlr_region_code,8,231,Manawatu-Whanganui
 nzta_clean,drivers_licence_register,nzta_dlr_region_code,9,486,Wellington
