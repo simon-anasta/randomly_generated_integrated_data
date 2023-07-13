@@ -309,7 +309,7 @@ generated_data = generated_data %>%
   ) %>%
   group_by(moh_evt_facility_code) %>%
   mutate(
-    moh_evt_local_id_nbr = floor(row_number() * 2.3) + 1311
+    moh_evt_local_id_nbr = floor(row_number() * 2.3) + 1311 %% 256
   ) %>%
   ungroup()
 
